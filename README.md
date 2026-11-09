@@ -33,6 +33,18 @@ npm run dev
 
 Open the link it prints (usually http://localhost:5173).
 
+## Put it online (Vercel, free)
+
+1. `npx vercel login`
+2. `npx vercel --yes` creates the project and makes a first test deploy.
+3. Vercel dashboard → your project → **Settings → Environment Variables**, add for all environments:
+   `VITE_SUPABASE_URL`, `VITE_SUPABASE_KEY`, `GROQ_API_KEY` (optional: `CHAT_DAILY_LIMIT`).
+4. `npx vercel --prod --yes` builds with those variables and prints your live link.
+5. Supabase → **Authentication → URL Configuration**: set **Site URL** to your live link and add it under
+   **Redirect URLs** (keep `http://localhost:5173` too), so confirmation emails point to the right place.
+
+To update the live site later: `npx vercel --prod --yes`.
+
 ## Camera buddy & privacy
 - Face/pose detection runs entirely in the browser (face-api + MediaPipe; models in `public/models`).
 - Face setup stores 5 face descriptors (128 numbers each, not photos) in this browser's localStorage only.

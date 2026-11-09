@@ -15,17 +15,44 @@ export function json(status: number, body: unknown): Response {
 }
 
 /** Only signed-in Study Buddy users may use the AI (protects your free Groq quota). */
-export async function requireUser(req: Request): Promise<{ id: string } | Response> {
+export type User = { id: string; token: string };
+
+const supabaseEnv = () => ({
+  url: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  key: process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_KEY,
+});
+
+export async function requireUser(req: Request): Promise<User | Response> {
   const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_KEY;
+  const { url, key } = supabaseEnv();
   if (!url || !key) return json(500, { error: 'Server is missing the Supabase settings.' });
   if (!token) return json(401, { error: 'Please sign in again.' });
   const r = await fetch(`${url}/auth/v1/user`, { headers: { Authorization: `Bearer ${token}`, apikey: key } });
   if (!r.ok) return json(401, { error: 'Please sign in again.' });
   const user = (await r.json()) as { id?: string };
-  return user.id ? { id: user.id } : json(401, { error: 'Please sign in again.' });
+  return user.id ? { id: user.id, token } : json(401, { error: 'Please sign in again.' });
 }
+
+/** Call a Supabase SQL function as the signed-in user (row security applies). */
+export async function userRpc<T>(user: User, fn: string, args: Record<string, unknown>): Promise<T> {
+  const { url, key } = supabaseEnv();
+  const r = await fetch(`${url}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${user.token}`, apikey: key!, 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) throw new Error(`${fn} failed (${r.status}): ${(await r.text()).slice(0, 200)}`);
+  return (await r.json()) as T;
+}
+
+/** Daily "Ask Buddy" messages per user. Change with the CHAT_DAILY_LIMIT env var. */
+export const chatDailyLimit = () => {
+  const n = Number(process.env.CHAT_DAILY_LIMIT);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 5;
+};
+
+/** The user's time zone (for "per day"), falling back to UTC if it's missing or odd. */
+export const safeTz = (v: unknown) => (typeof v === 'string' && /^[A-Za-z_]+(\/[A-Za-z0-9_+-]+){0,2}$/.test(v) ? v : 'UTC');
 
 // Best-effort per-user limit (each server instance keeps its own memory).
 const hits = new Map<string, number[]>();

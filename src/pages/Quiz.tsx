@@ -135,8 +135,8 @@ export default function Quiz() {
     return (
       <div className="card mx-auto flex max-w-lg flex-col items-center gap-4 p-10 text-center">
         <Mascot mood="focus" className="w-24" />
-        <p className="font-pixel animate-twinkle text-2xl">Buddy is writing your quiz…</p>
-        <p className="text-sm text-muted">This takes a few seconds ✏️</p>
+        <p className="font-pixel animate-twinkle text-2xl">Buddy is writing &amp; double-checking your quiz…</p>
+        <p className="text-sm text-muted">Every answer gets checked twice, so this takes a little while ✏️</p>
         <button className="btn btn-ghost" onClick={() => abortRef.current?.abort()}>
           Cancel
         </button>

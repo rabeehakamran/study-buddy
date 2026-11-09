@@ -180,6 +180,8 @@ input[type='checkbox'] {
 .md table {
   border-collapse: collapse;
   font-size: 0.9em;
+  display: block;
+  overflow-x: auto;
 }
 .md th,
 .md td {

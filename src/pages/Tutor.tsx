@@ -3,13 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useRows } from '../lib/useRows';
 import type { Subject } from '../lib/types';
-import { streamChat, type ChatMessage } from '../lib/ai';
+import { getChatUsage, LimitReachedError, streamChat, type ChatMessage, type ChatUsage } from '../lib/ai';
 import ErrorBanner from '../components/ErrorBanner';
 import Markdown from '../components/Markdown';
 import PageHeader from '../components/PageHeader';
 import Mascot from '../pixel/Mascot';
 import PixelArt from '../pixel/PixelArt';
-import { MASCOT_PALETTE, mascotRows } from '../pixel/sprites';
+import { HEART, HEART_EMPTY_PALETTE, HEART_PALETTE, MASCOT_PALETTE, mascotRows } from '../pixel/sprites';
 
 const SUGGESTIONS = [
   'Explain photosynthesis like I’m 10 🌱',
@@ -40,6 +40,14 @@ export default function Tutor() {
   const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [usage, setUsage] = useState<ChatUsage | null>(null);
+  const outOfMessages = usage !== null && usage.used >= usage.limit;
+
+  useEffect(() => {
+    getChatUsage()
+      .then(setUsage)
+      .catch((e: Error) => setError(e.message));
+  }, []);
 
   // A prompt handed over from the quiz page: use it once, then clear it from history state.
   useEffect(() => {
@@ -62,7 +70,7 @@ export default function Tutor() {
 
   async function send(text: string) {
     const content = text.trim();
-    if (!content || streaming) return;
+    if (!content || streaming || outOfMessages) return;
     const history: ChatMessage[] = [...messages, { role: 'user', content }];
     setMessages([...history, { role: 'assistant', content: '' }]);
     setInput('');
@@ -81,9 +89,17 @@ export default function Tutor() {
             return copy;
           }),
         ctrl.signal,
+        setUsage,
       );
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') setError((e as Error).message);
+      if (e instanceof LimitReachedError) {
+        // Give her message back so it isn't lost, and show the friendly limit note.
+        setMessages((m) => m.filter((_, i) => i < m.length - 2));
+        setInput(content);
+        setUsage((u) => (u ? { ...u, used: u.limit } : u));
+      } else if ((e as Error).name !== 'AbortError') {
+        setError((e as Error).message);
+      }
     } finally {
       setStreaming(false);
       abortRef.current = null;
@@ -127,7 +143,21 @@ export default function Tutor() {
           subtitle="Stuck on something? Ask in English, Hinglish or Urdu 💬"
           art={<Mascot mood="focus" className="w-full" />}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {usage && (
+            <div
+              className="flex items-center gap-1 bg-surface-2 px-3 py-1.5"
+              title="Buddy messages left today"
+              aria-label={`${Math.max(0, usage.limit - usage.used)} of ${usage.limit} Buddy messages left today`}
+            >
+              {Array.from({ length: usage.limit }, (_, i) => (
+                <PixelArt key={i} rows={HEART} palette={i < usage.limit - usage.used ? HEART_PALETTE : HEART_EMPTY_PALETTE} className="w-4" />
+              ))}
+              <span className="ml-1 text-xs text-muted">
+                {Math.max(0, usage.limit - usage.used)}/{usage.limit} left today
+              </span>
+            </div>
+          )}
           <Link to="/quiz" className="btn btn-ghost">
             Quiz me ✨
           </Link>
@@ -202,6 +232,19 @@ export default function Tutor() {
           </div>
         )}
 
+        {outOfMessages && !streaming ? (
+          <div className="flex flex-wrap items-center gap-3 border-t-[3px] border-line p-4">
+            <Mascot mood="sleep" className="w-10 shrink-0" />
+            <p className="flex-1 text-sm">
+              <b className="font-pixel text-base">That’s all {usage!.limit} of today’s Buddy messages 💜</b>
+              <br />
+              <span className="text-muted">Buddy is resting. Your messages come back tomorrow! You can still make quizzes.</span>
+            </p>
+            <Link to="/quiz" className="btn btn-primary">
+              Make a quiz ✨
+            </Link>
+          </div>
+        ) : (
         <form onSubmit={onSubmit} className="flex items-end gap-2 border-t-[3px] border-line p-3">
           <textarea
             ref={inputRef}
@@ -224,6 +267,7 @@ export default function Tutor() {
             </button>
           )}
         </form>
+        )}
       </section>
       <p className="text-center text-xs text-muted">Buddy is an AI and can make mistakes. Double-check important facts with your book or teacher.</p>
     </div>

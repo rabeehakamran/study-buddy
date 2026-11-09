@@ -14,13 +14,15 @@ Timetable, tasks, pomodoro with face presence, AI tutor, streaks and a friends l
 ## Setup (one time)
 
 1. **Create a free Supabase project** at https://supabase.com → New project.
-2. **Create the tables:** in the dashboard open **SQL Editor → New query**, paste `supabase/001_phase1.sql`, click **Run**. Then do the same with `002_pomodoro.sql`, `003_presence.sql`, `004_streaks_groups.sql` and `005_quizzes.sql` (in order).
+2. **Create the tables:** in the dashboard open **SQL Editor → New query**, paste `supabase/001_phase1.sql`, click **Run**. Then do the same with `002_pomodoro.sql`, `003_presence.sql`, `004_streaks_groups.sql`, `005_quizzes.sql` and `006_ai_limits.sql` (in order).
 3. **Copy your keys:** open **Project Settings → API** (or the **Connect** button), then copy the *Project URL* and the *publishable* (or *anon*) key.
 4. In this folder, copy `.env.example` to `.env` and paste those two values in.
 5. *(Optional, makes testing easier)* **Authentication → Sign In / Providers → Email**: turn off "Confirm email" so sign-up logs you straight in.
 
 6. **AI (free):** make a key at https://console.groq.com/keys and add `GROQ_API_KEY=...` to `.env`.
    No `VITE_` prefix: the key stays on the server (`api/` functions) and is never sent to the browser.
+   Each student gets 5 "Ask Buddy" messages a day (set `CHAT_DAILY_LIMIT` to change it; counted in `ai_usage`).
+   Quizzes are generated, then independently re-solved by a second AI pass; questions where the two disagree are dropped.
 
 ## Run it
 

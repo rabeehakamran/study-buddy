@@ -90,5 +90,9 @@ export async function streamChat(
 export async function makeQuiz(req: QuizRequest, signal?: AbortSignal): Promise<Quiz> {
   const r = await fetch('/api/quiz', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(req), signal });
   if (!r.ok) throw await errorFrom(r);
-  return (await r.json()) as Quiz;
+  // The server streams keep-alive spaces first; errors after that arrive as {error} with status 200.
+  const data = (await r.json()) as Quiz & { error?: string };
+  if (data.error) throw new Error(data.error);
+  if (!Array.isArray(data.questions) || data.questions.length === 0) throw new Error('Buddy got confused making that quiz. Try again 🐱');
+  return data;
 }

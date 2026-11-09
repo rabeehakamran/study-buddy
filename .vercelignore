@@ -1,0 +1,7 @@
+# Never upload local secrets or junk to Vercel. Set env vars in the Vercel dashboard instead.
+.env
+.env.*
+!.env.example
+node_modules
+dist
+ui-inspo

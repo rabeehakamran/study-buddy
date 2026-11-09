@@ -166,6 +166,35 @@ If you notice a question is flawed, replace it with a different question. Never 
 Rules: facts must be accurate; no trick questions; no "all/none of the above"; no markdown or LaTeX (write x^2 for powers, P(A|B) for conditional probability).
 title: short and cute, max 6 words.`;
 
+  // Generating + double-checking can take a while, and Vercel Edge functions must start
+  // responding within 25s. So reply right away and send a space every few seconds
+  // (JSON ignores leading whitespace); the real result — quiz or {error} — comes at the end.
+  const enc = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      controller.enqueue(enc.encode(' ')); // first byte immediately
+      const ping = setInterval(() => controller.enqueue(enc.encode(' ')), 5000);
+      try {
+        const result = await buildQuiz(prompt, count, language);
+        controller.enqueue(enc.encode(JSON.stringify(result)));
+      } catch (e) {
+        console.error('[quiz]', e);
+        controller.enqueue(enc.encode(JSON.stringify({ error: 'Buddy got confused making that quiz. Try again 🐱' })));
+      } finally {
+        clearInterval(ping);
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-cache' } });
+}
+
+async function errorMessage(r: Response | null | undefined, fallback: string): Promise<string> {
+  const b = (await r?.json().catch(() => null)) as { error?: string } | null;
+  return b?.error ?? fallback;
+}
+
+async function buildQuiz(prompt: string, count: number, language: string) {
   const gen = await groqJson(
     [
       { role: 'system', content: 'You are Buddy, a friendly, very careful tutor who writes accurate school quizzes. Reply with JSON only.' },
@@ -175,16 +204,16 @@ title: short and cute, max 6 words.`;
     DRAFT_SCHEMA,
     0.6,
   );
-  if (!gen.data) return gen.error ?? json(502, { error: 'Buddy got confused making that quiz. Try again 🐱' });
+  if (!gen.data) return { error: await errorMessage(gen.error, 'Buddy got confused making that quiz. Try again 🐱') };
   const draft = toQuestions(gen.data);
   if (!draft || draft.questions.length < 3) {
-    return json(502, { error: 'Buddy got confused making that quiz. Try again, or change the topic a little.' });
+    return { error: 'Buddy got confused making that quiz. Try again, or change the topic a little.' };
   }
 
   const checked = await verify(draft.questions, language);
   const questions = (checked ?? draft.questions).slice(0, count);
   if (questions.length < Math.min(3, count)) {
-    return json(502, { error: 'Buddy wasn’t sure enough about those questions. Try again, or make the topic a bit more specific.' });
+    return { error: 'Buddy wasn’t sure enough about those questions. Try again, or make the topic a bit more specific.' };
   }
-  return json(200, { title: draft.title, questions, verified: checked !== null });
+  return { title: draft.title, questions, verified: checked !== null };
 }

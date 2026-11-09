@@ -167,10 +167,11 @@ export function usePomodoro(userId: string, onFinish: (s: FinishedSession) => vo
         focusStartedAt: cur.mode === 'focus' ? (cur.focusStartedAt ?? t) : null,
       });
     },
-    pause() {
+    /** Pause now, or "as of" an earlier moment (used when she walked away). */
+    pause(at?: number) {
       const cur = stateRef.current;
       if (cur.status !== 'running' || cur.endsAt === null || cur.runStartedAt === null) return;
-      const t = Date.now();
+      const t = Math.min(Date.now(), Math.max(at ?? Date.now(), cur.runStartedAt));
       commit({
         ...cur,
         status: 'paused',

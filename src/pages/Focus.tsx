@@ -1,78 +1,34 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useRows } from '../lib/useRows';
 import { useAuth } from '../auth/AuthProvider';
-import { usePomodoro, type FinishedSession, type Mode, type Settings } from '../lib/usePomodoro';
-import type { StudySession, Subject, Task } from '../lib/types';
+import type { Mode, Settings } from '../lib/usePomodoro';
+import type { PresenceEvent, Subject, Task } from '../lib/types';
 import { fmtTime } from '../lib/format';
+import { MODE_LABEL, fmtClock, useFocus } from '../focus/FocusProvider';
+import { loadFace } from '../presence/faceStore';
+import { statusInfo } from '../presence/statusInfo';
 import ErrorBanner from '../components/ErrorBanner';
 import Mascot from '../pixel/Mascot';
 import PixelArt from '../pixel/PixelArt';
 import { HEART, HEART_EMPTY_PALETTE, HEART_PALETTE, type Mood } from '../pixel/sprites';
 
-const MODE_LABEL: Record<Mode, string> = { focus: 'Focus', short: 'Short break', long: 'Long break' };
 const SEGMENTS = 20;
-
-function fmtClock(ms: number) {
-  const total = Math.ceil(ms / 1000);
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-}
 
 function fmtMinutes(seconds: number) {
   const m = Math.round(seconds / 60);
   return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
 }
 
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+const clockOf = (iso: string | number) => fmtTime(new Date(iso).toTimeString().slice(0, 5));
 
 export default function Focus() {
-  const { session } = useAuth();
+  const { pomo, today, events, error, clearError, justDone, clearJustDone, camera } = useFocus();
+  const { state, settings, remainingMs } = pomo;
   const subjects = useRows<Subject>('subjects', 'position');
   const tasks = useRows<Task>('tasks', 'created_at');
-  const [today, setToday] = useState<StudySession[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [justDone, setJustDone] = useState<FinishedSession | null>(null);
-
-  useEffect(() => {
-    supabase
-      .from('study_sessions')
-      .select('*')
-      .gte('started_at', startOfToday().toISOString())
-      .order('started_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) setError(error.message);
-        else setToday((data ?? []) as StudySession[]);
-      });
-  }, []);
-
-  async function saveSession(f: FinishedSession) {
-    const { data, error } = await supabase
-      .from('study_sessions')
-      .insert({
-        subject_id: f.subjectId,
-        task_id: f.taskId,
-        started_at: new Date(f.startedAt).toISOString(),
-        ended_at: new Date(f.endedAt).toISOString(),
-        focus_seconds: f.focusSeconds,
-        planned_minutes: f.plannedMinutes,
-        completed: f.completed,
-      })
-      .select()
-      .single();
-    if (error) {
-      setError(`Couldn't save that session: ${error.message}`);
-      return;
-    }
-    if (f.startedAt >= startOfToday().getTime()) setToday((r) => [data as StudySession, ...r]);
-    if (f.completed) setJustDone(f);
-  }
-
-  const pomo = usePomodoro(session!.user.id, saveSession);
-  const { state, settings, remainingMs } = pomo;
+  const [localError, setLocalError] = useState<string | null>(null);
 
   // Forget a chosen subject/task that has since been deleted.
   useEffect(() => {
@@ -80,26 +36,22 @@ export default function Focus() {
     const subjectOk = !state.subjectId || subjects.rows.some((s) => s.id === state.subjectId);
     const taskOk = !state.taskId || tasks.rows.some((t) => t.id === state.taskId);
     if (!subjectOk || !taskOk) pomo.setTarget(subjectOk ? state.subjectId : null, null);
-  }, [subjects.loading, tasks.loading, subjects.rows, tasks.rows]);
-
-  // Countdown in the browser tab title.
-  useEffect(() => {
-    document.title = state.status === 'idle' ? 'Focus · Study Buddy' : `${fmtClock(remainingMs)} · ${MODE_LABEL[state.mode]}`;
-  }, [remainingMs, state.status, state.mode]);
-  useEffect(() => () => void (document.title = 'Study Buddy'), []);
+  }, [subjects.loading, tasks.loading, subjects.rows, tasks.rows]); // only when data changes
 
   async function markTaskDone(taskId: string) {
     const { error } = await supabase.from('tasks').update({ done: true }).eq('id', taskId);
-    if (error) return setError(error.message);
+    if (error) return setLocalError(error.message);
     tasks.setRows((r) => r.map((t) => (t.id === taskId ? { ...t, done: true } : t)));
-    setJustDone(null);
+    clearJustDone();
   }
 
   const isFocus = state.mode === 'focus';
+  const away = camera.on && camera.status === 'away';
   const mood: Mood =
-    state.status === 'paused' ? 'sad' : state.status === 'running' ? (isFocus ? 'focus' : 'sleep') : 'happy';
-  const caption =
-    state.status === 'paused'
+    state.status === 'paused' || away ? 'sad' : state.status === 'running' ? (isFocus ? 'focus' : 'sleep') : 'happy';
+  const caption = away
+    ? 'I can’t see you! Look at the camera to carry on.'
+    : state.status === 'paused'
       ? 'Paused… come back soon!'
       : state.status === 'running'
         ? isFocus
@@ -128,7 +80,13 @@ export default function Focus() {
         <p className="text-sm text-muted">Pick a subject, start the timer, and Buddy will keep you company.</p>
       </div>
 
-      <ErrorBanner message={error ?? subjects.error ?? tasks.error} onClose={() => setError(null)} />
+      <ErrorBanner
+        message={localError ?? error ?? subjects.error ?? tasks.error}
+        onClose={() => {
+          setLocalError(null);
+          clearError();
+        }}
+      />
 
       {justDone && (
         <div className="card flex flex-wrap items-center gap-3 p-4">
@@ -138,7 +96,7 @@ export default function Focus() {
               Mark “{doneTask.title}” done
             </button>
           )}
-          <button className="btn btn-ghost ml-auto" onClick={() => setJustDone(null)}>
+          <button className="btn btn-ghost ml-auto" onClick={clearJustDone}>
             Close
           </button>
         </div>
@@ -163,15 +121,19 @@ export default function Focus() {
           </div>
 
           <Mascot mood={mood} className="w-28 sm:w-32" />
-          <p className="text-sm text-muted" aria-live="polite">
+          <p className="text-center text-sm text-muted" aria-live="polite">
             {caption}
           </p>
 
-          <div className="font-pixel text-7xl font-bold tabular-nums sm:text-8xl" aria-live="off">
-            {fmtClock(remainingMs)}
-          </div>
+          <div className="font-pixel text-7xl font-bold tabular-nums sm:text-8xl">{fmtClock(remainingMs)}</div>
 
-          <div className="flex w-full max-w-md gap-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
+          <div
+            className="flex w-full max-w-md gap-1"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+          >
             {Array.from({ length: SEGMENTS }, (_, i) => (
               <div key={i} className={`h-3 flex-1 ${i < filled ? (isFocus ? 'bg-accent' : 'bg-primary') : 'bg-surface-2'}`} />
             ))}
@@ -185,7 +147,7 @@ export default function Focus() {
 
           <div className="flex flex-wrap justify-center gap-2">
             {state.status === 'running' ? (
-              <button className="btn btn-primary min-w-32 text-lg" onClick={pomo.pause}>
+              <button className="btn btn-primary min-w-32 text-lg" onClick={() => pomo.pause()}>
                 Pause
               </button>
             ) : (
@@ -243,6 +205,8 @@ export default function Focus() {
 
         {/* ---------- Side column ---------- */}
         <div className="flex flex-col gap-6">
+          <CameraCard />
+
           <section className="card p-4">
             <h2 className="mb-3 text-xl font-bold">Today</h2>
             <div className="mb-4 grid grid-cols-2 gap-3">
@@ -264,7 +228,7 @@ export default function Focus() {
                   return (
                     <li key={s.id} className="flex items-center gap-2">
                       <span className="h-3 w-3 shrink-0" style={{ background: subj?.color ?? 'var(--color-line)' }} />
-                      <span className="w-16 shrink-0 text-muted">{fmtTime(new Date(s.started_at).toTimeString().slice(0, 5))}</span>
+                      <span className="w-16 shrink-0 text-muted">{clockOf(s.started_at)}</span>
                       <span className="flex-1 truncate">{subj?.name ?? 'No subject'}</span>
                       <span className="font-semibold">{fmtMinutes(s.focus_seconds)}</span>
                       <span title={s.completed ? 'Completed' : 'Ended early'}>{s.completed ? '✓' : '·'}</span>
@@ -275,10 +239,87 @@ export default function Focus() {
             )}
           </section>
 
+          <DeskLog events={events} />
+
           <SettingsCard settings={settings} disabled={locked} onChange={pomo.setSettings} />
         </div>
       </div>
     </div>
+  );
+}
+
+function CameraCard() {
+  const { session } = useAuth();
+  const { camera } = useFocus();
+  const enrolled = loadFace(session!.user.id) !== null;
+  const info = statusInfo(camera.status, camera.graceLeft);
+
+  return (
+    <section className="card p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="text-xl font-bold">Camera buddy</h2>
+        <button
+          role="switch"
+          aria-checked={camera.on}
+          onClick={() => camera.setOn(!camera.on)}
+          className={`btn px-3 py-1 text-sm ${camera.on ? 'btn-primary' : 'bg-surface-2 text-muted'}`}
+        >
+          {camera.on ? 'On' : 'Off'}
+        </button>
+      </div>
+      <p className="mb-3 text-sm text-muted">
+        Logs when you’re at your desk and pauses the timer if you leave for 1 minute. Head down writing still counts. Video never
+        leaves your laptop.
+      </p>
+      {camera.on && (
+        <p className="mb-3 flex items-center gap-2 text-sm">
+          <span className={`h-2.5 w-2.5 shrink-0 ${info.dot}`} />
+          {camera.status === 'error' ? camera.error : info.text}
+        </p>
+      )}
+      <Link to="/face-setup" className="text-sm font-semibold text-primary">
+        {enrolled ? 'Redo face setup' : 'Set up your face (1 min) →'}
+      </Link>
+    </section>
+  );
+}
+
+function DeskLog({ events }: { events: PresenceEvent[] }) {
+  // Pair "in" with the next "out".
+  const segments: { start: string; end: string | null; reason: string | null }[] = [];
+  for (const e of events) {
+    const open = segments[segments.length - 1];
+    if (e.kind === 'in') {
+      if (!open || open.end !== null) segments.push({ start: e.at, end: null, reason: null });
+    } else if (open && open.end === null) {
+      open.end = e.at;
+      open.reason = e.reason;
+    }
+  }
+  const totalMs = segments.reduce((sum, s) => sum + (new Date(s.end ?? Date.now()).getTime() - new Date(s.start).getTime()), 0);
+
+  return (
+    <section className="card p-4">
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-xl font-bold">Desk log</h2>
+        {segments.length > 0 && <span className="text-sm text-muted">{fmtMinutes(totalMs / 1000)} at desk</span>}
+      </div>
+      {segments.length === 0 ? (
+        <p className="text-sm text-muted">Turn on Camera buddy to log when you’re studying.</p>
+      ) : (
+        <ul className="flex flex-col gap-1.5 text-sm">
+          {segments.map((s) => (
+            <li key={s.start} className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 bg-emerald-400" />
+              <span className="flex-1">
+                {clockOf(s.start)} – {s.end ? clockOf(s.end) : 'now'}
+              </span>
+              {s.reason && <span className="text-xs text-muted">{s.reason}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

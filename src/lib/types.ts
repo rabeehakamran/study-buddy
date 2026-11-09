@@ -35,7 +35,14 @@ export type StudySession = {
   completed: boolean;
 };
 
-export const DAYS =['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+export type PresenceEvent = {
+  id: string;
+  kind: 'in' | 'out';
+  at: string;
+  reason: string | null;
+};
+
+export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const SUBJECT_COLORS = [
   '#f9a8d4', // pink

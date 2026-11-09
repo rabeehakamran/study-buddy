@@ -11,6 +11,8 @@ const links = [
   { to: '/focus', label: 'Focus', end: false },
   { to: '/subjects', label: 'Subjects', end: false },
   { to: '/timetable', label: 'Timetable', end: false },
+  { to: '/progress', label: 'Progress', end: false },
+  { to: '/friends', label: 'Friends', end: false },
 ];
 
 export default function Layout() {

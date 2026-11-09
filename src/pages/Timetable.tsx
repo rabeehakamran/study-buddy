@@ -6,6 +6,9 @@ import { DAYS, type Slot, type Subject } from '../lib/types';
 import { fmtTime, todayIndex } from '../lib/format';
 import ErrorBanner from '../components/ErrorBanner';
 import Modal from '../components/Modal';
+import PageHeader from '../components/PageHeader';
+import PixelArt from '../pixel/PixelArt';
+import { CALENDAR, CALENDAR_PALETTE } from '../pixel/sprites';
 
 type Editing = { subject: Subject; day: number; slot: Slot | null };
 type SlotValues = { start_time: string; end_time: string; note: string | null };
@@ -49,10 +52,11 @@ export default function Timetable() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Weekly timetable</h1>
-        <p className="text-sm text-muted">Tap + to plan when you'll study each subject. It repeats every week.</p>
-      </div>
+      <PageHeader
+        title="Weekly timetable"
+        subtitle="Tap + to plan when you'll study each subject. It repeats every week."
+        art={<PixelArt rows={CALENDAR} palette={CALENDAR_PALETTE} className="w-full" />}
+      />
 
       <ErrorBanner message={error ?? subjects.error ?? slots.error} onClose={() => setError(null)} />
 

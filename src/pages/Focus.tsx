@@ -12,7 +12,8 @@ import { statusInfo } from '../presence/statusInfo';
 import ErrorBanner from '../components/ErrorBanner';
 import Mascot from '../pixel/Mascot';
 import PixelArt from '../pixel/PixelArt';
-import { HEART, HEART_EMPTY_PALETTE, HEART_PALETTE, type Mood } from '../pixel/sprites';
+import { HEART, HEART_EMPTY_PALETTE, HEART_PALETTE, HOURGLASS, HOURGLASS_PALETTE, type Mood } from '../pixel/sprites';
+import PageHeader from '../components/PageHeader';
 
 const SEGMENTS = 20;
 
@@ -75,10 +76,11 @@ export default function Focus() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Focus</h1>
-        <p className="text-sm text-muted">Pick a subject, start the timer, and Buddy will keep you company.</p>
-      </div>
+      <PageHeader
+        title="Focus"
+        subtitle="Pick a subject, start the timer, and Buddy will keep you company."
+        art={<PixelArt rows={HOURGLASS} palette={HOURGLASS_PALETTE} className="mx-auto w-3/4" />}
+      />
 
       <ErrorBanner
         message={localError ?? error ?? subjects.error ?? tasks.error}

@@ -5,6 +5,9 @@ import { SUBJECT_COLORS, type Subject, type Task } from '../lib/types';
 import { daysFromToday, fmtDue, sortTasks } from '../lib/format';
 import ErrorBanner from '../components/ErrorBanner';
 import ColorPicker from '../components/ColorPicker';
+import PageHeader from '../components/PageHeader';
+import PixelArt from '../pixel/PixelArt';
+import { BOOKS, BOOKS_PALETTE } from '../pixel/sprites';
 
 export default function Subjects() {
   const subjects = useRows<Subject>('subjects', 'position');
@@ -55,10 +58,11 @@ export default function Subjects() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Subjects</h1>
-        <p className="text-sm text-muted">Add your subjects, then the tasks for each one.</p>
-      </div>
+      <PageHeader
+        title="Subjects"
+        subtitle="Add your subjects, then the tasks for each one."
+        art={<PixelArt rows={BOOKS} palette={BOOKS_PALETTE} className="w-full" />}
+      />
 
       <ErrorBanner message={error ?? subjects.error ?? tasks.error} onClose={() => setError(null)} />
 

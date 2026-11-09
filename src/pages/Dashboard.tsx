@@ -9,6 +9,10 @@ import ErrorBanner from '../components/ErrorBanner';
 import { TaskRow } from './Subjects';
 import Mascot from '../pixel/Mascot';
 import PixelScene from '../pixel/PixelScene';
+import PixelArt from '../pixel/PixelArt';
+import { FLAME, FLAME_OFF_PALETTE, FLAME_PALETTE } from '../pixel/sprites';
+import { useDailyTotals } from '../lib/stats';
+import { quoteOfTheDay } from '../lib/quotes';
 
 export default function Dashboard() {
   const { session } = useAuth();
@@ -16,6 +20,8 @@ export default function Dashboard() {
   const slots = useRows<Slot>('timetable_slots', 'start_time');
   const tasks = useRows<Task>('tasks', 'created_at');
   const [error, setError] = useState<string | null>(null);
+  const [quoteOffset, setQuoteOffset] = useState(0);
+  const { streaks } = useDailyTotals(400);
 
   const today = todayIndex();
   const subjectById = new Map(subjects.rows.map((s) => [s.id, s]));
@@ -40,16 +46,45 @@ export default function Dashboard() {
     <div className="space-y-6">
       <section className="card overflow-hidden">
         <div className="flex flex-wrap items-center gap-6 px-6 pt-6">
-          <Mascot mood="happy" className="w-20 sm:w-24" />
           <div className="flex-1">
             <h1 className="text-3xl font-bold sm:text-4xl">Hi {displayName(session)}!</h1>
             <p className="text-muted">Happy {DAYS[today]}! Here's your day.</p>
           </div>
+          <Link
+            to="/progress"
+            className="flex items-center gap-2 bg-surface-2 px-3 py-2 hover:bg-primary-soft"
+            aria-label={`${streaks.current} day streak. See progress`}
+          >
+            <PixelArt rows={FLAME} palette={streaks.current > 0 ? FLAME_PALETTE : FLAME_OFF_PALETTE} className="w-6" />
+            <span className="font-pixel text-2xl font-bold">{streaks.current}</span>
+            <span className="text-xs text-muted">
+              day
+              <br />
+              streak
+            </span>
+          </Link>
           <Link to="/focus" className="btn btn-primary text-lg">
             Start a pomodoro ▶
           </Link>
         </div>
-        <PixelScene className="mt-2" />
+
+        {/* Buddy's affirmation of the day */}
+        <div className="flex items-end gap-3 px-6 pt-5">
+          <Mascot mood="happy" className="w-16 shrink-0 sm:w-20" />
+          <figure className="relative mb-6 max-w-xl bg-primary-soft px-4 py-3">
+            {/* pixel speech-bubble tail */}
+            <span className="absolute -left-2 bottom-3 h-2 w-2 bg-primary-soft" aria-hidden />
+            <span className="absolute -left-4 bottom-1 h-2 w-2 bg-primary-soft" aria-hidden />
+            <blockquote className="font-pixel text-lg leading-snug">{quoteOfTheDay(quoteOffset)}</blockquote>
+            <figcaption className="mt-1 flex items-center justify-between gap-2 text-xs text-muted">
+              <span>Buddy, {quoteOffset === 0 ? 'today’s note for you' : 'one more for you'}</span>
+              <button className="font-semibold text-primary" onClick={() => setQuoteOffset((n) => n + 1)}>
+                another one ✨
+              </button>
+            </figcaption>
+          </figure>
+        </div>
+        <PixelScene />
       </section>
 
       <ErrorBanner message={error ?? subjects.error ?? slots.error ?? tasks.error} onClose={() => setError(null)} />

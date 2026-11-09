@@ -6,14 +6,15 @@ Timetable, tasks, pomodoro with face presence, AI tutor, streaks and a friends l
 - [x] **Phase 1:** login, subjects + tasks, weekly timetable, "Today" dashboard
 - [x] **Phase 2:** pomodoro timer (sessions saved for streaks)
 - [x] **Phase 3:** Camera buddy: on-device presence + face recognition, auto-pause, desk log
-- [ ] Phase 4: streaks, weekly hours, friend-group leaderboard
+- [x] **Phase 4:** streaks (25 min/day), weekly chart, study-day heatmap, per-subject time, friend groups + leaderboard
+- [x] Pixel illustrations on every page, Buddy's daily affirmations on Today
 - [ ] Phase 5: Groq-powered tutor + interactive quizzes
 - [x] Reskin: black + purple pixel style, Buddy the cat mascot
 
 ## Setup (one time)
 
 1. **Create a free Supabase project** at https://supabase.com → New project.
-2. **Create the tables:** in the dashboard open **SQL Editor → New query**, paste `supabase/001_phase1.sql`, click **Run**. Then do the same with `supabase/002_pomodoro.sql` and `supabase/003_presence.sql` (in order).
+2. **Create the tables:** in the dashboard open **SQL Editor → New query**, paste `supabase/001_phase1.sql`, click **Run**. Then do the same with `002_pomodoro.sql`, `003_presence.sql` and `004_streaks_groups.sql` (in order).
 3. **Copy your keys:** open **Project Settings → API** (or the **Connect** button), then copy the *Project URL* and the *publishable* (or *anon*) key.
 4. In this folder, copy `.env.example` to `.env` and paste those two values in.
 5. *(Optional, makes testing easier)* **Authentication → Sign In / Providers → Email**: turn off "Confirm email" so sign-up logs you straight in.

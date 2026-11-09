@@ -8,6 +8,8 @@ import Subjects from './pages/Subjects';
 import Timetable from './pages/Timetable';
 import Focus from './pages/Focus';
 import FaceSetup from './pages/FaceSetup';
+import Progress from './pages/Progress';
+import Friends from './pages/Friends';
 import Mascot from './pixel/Mascot';
 
 export default function App() {
@@ -32,6 +34,8 @@ function Gate() {
           <Route path="timetable" element={<Timetable />} />
           <Route path="focus" element={<Focus />} />
           <Route path="face-setup" element={<FaceSetup />} />
+          <Route path="progress" element={<Progress />} />
+          <Route path="friends" element={<Friends />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -88,5 +88,85 @@ export const HEART_EMPTY_PALETTE: Palette = { h: '#2c2740', H: '#3a3352' };
 export const SPARKLE = ['..s..', '..s..', 'sssss', '..s..', '..s..'];
 export const SPARKLE_PALETTE: Palette = { s: '#c4b5fd' };
 
-export const CLOUD = ['...cccc.....', '.cccccccc...', 'cccccccccccc'];
+export const FLAME = [
+  '....f....',
+  '...ff....',
+  '...fff..f',
+  '..ffYff.f',
+  '.ffYYfff.',
+  'fffYYYfff',
+  'ffYYwYYff',
+  'ffYwwwYff',
+  'fYYwwwYYf',
+  '.fYYYYYf.',
+  '..fffff..',
+];
+export const FLAME_PALETTE: Palette = { f: '#7c3aed', Y: '#c4b5fd', w: '#ffffff' };
+export const FLAME_OFF_PALETTE: Palette = { f: '#2c2740', Y: '#3a3352', w: '#4a4363' };
+
+export const BOOKS = [
+  '.....hh.....',
+  '.bbbbbbbbb..',
+  '.bBBBBBBBb..',
+  '.bbbbbbbbb..',
+  '..ccccccccc.',
+  '..cCCCCCCCc.',
+  '..ccccccccc.',
+  'aaaaaaaaaa..',
+  'aAAAAAAAAa..',
+  'aaaaaaaaaa..',
+];
+export const BOOKS_PALETTE: Palette = {
+  h: '#c4b5fd',
+  b: '#8b5cf6',
+  B: '#ede9fe',
+  c: '#c4b5fd',
+  C: '#ffffff',
+  a: '#6d28d9',
+  A: '#ede9fe',
+};
+
+export const CALENDAR = [
+  '..k......k..',
+  '.rkrrrrrrkr.',
+  '.rrrrrrrrrr.',
+  '.wwwwwwwwww.',
+  '.wdwdwdwdww.',
+  '.wwwwwwwwww.',
+  '.wdwdwHwdww.',
+  '.wwwwwwwwww.',
+  '.wdwdwdwdww.',
+  '.wwwwwwwwww.',
+];
+export const CALENDAR_PALETTE: Palette = { k: '#4c1d95', r: '#8b5cf6', w: '#efe9ff', d: '#a78bfa', H: '#7c3aed' };
+
+export const TROPHY = [
+  '..ttttttt..',
+  't.tTttttt.t',
+  't.tTttttt.t',
+  '.ttTtttttt.',
+  '...ttttt...',
+  '....ttt....',
+  '.....t.....',
+  '....bbb....',
+  '..bbbbbbb..',
+];
+export const TROPHY_PALETTE: Palette = { t: '#c4b5fd', T: '#ffffff', b: '#6d28d9' };
+
+export const HOURGLASS = [
+  'ggggggggg',
+  '.wwwwwww.',
+  '.wsssssw.',
+  '..wsssw..',
+  '...wsw...',
+  '....w....',
+  '...w.w...',
+  '..w...w..',
+  '.w..s..w.',
+  '.wsssssw.',
+  'ggggggggg',
+];
+export const HOURGLASS_PALETTE: Palette = { g: '#6d28d9', w: '#c4b5fd', s: '#f5f3ff' };
+
+export const CLOUD =['...cccc.....', '.cccccccc...', 'cccccccccccc'];
 export const CLOUD_PALETTE: Palette = { c: '#1f1833' };

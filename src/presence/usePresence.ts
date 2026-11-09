@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadVision } from './vision';
-import { bestDistance, loadFace, MATCH_THRESHOLD } from './faceStore';
+import { checkFace, loadProfile } from './faceStore';
 
 export type PresenceStatus =
   | 'off' // camera off
@@ -42,8 +42,8 @@ export function usePresence(userId: string, enabled: boolean, faceVersion: numbe
       setStatus('off');
       return;
     }
-    const samples = loadFace(userId);
-    if (!samples) {
+    const profile = loadProfile(userId);
+    if (!profile) {
       setStatus('needs-setup');
       return;
     }
@@ -86,7 +86,7 @@ export function usePresence(userId: string, enabled: boolean, faceVersion: numbe
             let seen = false;
             let kind: 'me' | 'body' | 'stranger' | 'none' = 'none';
             if (d.descriptor) {
-              if (bestDistance(d.descriptor, samples!) < MATCH_THRESHOLD) {
+              if (checkFace(d.descriptor, profile!).isMe) {
                 identity = 'me';
                 strangerStreak = 0;
                 verifiedOnce = true;

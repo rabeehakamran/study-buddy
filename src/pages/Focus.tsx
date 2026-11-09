@@ -7,7 +7,7 @@ import type { Mode, Settings } from '../lib/usePomodoro';
 import type { PresenceEvent, Subject, Task } from '../lib/types';
 import { fmtTime } from '../lib/format';
 import { MODE_LABEL, fmtClock, useFocus } from '../focus/FocusProvider';
-import { loadFace } from '../presence/faceStore';
+import { loadProfile } from '../presence/faceStore';
 import { statusInfo } from '../presence/statusInfo';
 import ErrorBanner from '../components/ErrorBanner';
 import Mascot from '../pixel/Mascot';
@@ -251,7 +251,7 @@ export default function Focus() {
 function CameraCard() {
   const { session } = useAuth();
   const { camera } = useFocus();
-  const enrolled = loadFace(session!.user.id) !== null;
+  const enrolled = loadProfile(session!.user.id) !== null;
   const info = statusInfo(camera.status, camera.graceLeft);
 
   return (

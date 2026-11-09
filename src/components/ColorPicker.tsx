@@ -11,7 +11,7 @@ export default function ColorPicker({ value, onChange }: { value: string; onChan
           aria-checked={value === c}
           aria-label={c}
           onClick={() => onChange(c)}
-          className={`h-7 w-7 rounded-full border-2 transition ${value === c ? 'scale-110 border-ink' : 'border-transparent'}`}
+          className={`h-7 w-7 border-2 transition ${value === c ? 'scale-110 border-ink' : 'border-transparent'}`}
           style={{ background: c }}
         />
       ))}

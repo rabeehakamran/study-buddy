@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Subjects from './pages/Subjects';
 import Timetable from './pages/Timetable';
+import Focus from './pages/Focus';
+import Mascot from './pixel/Mascot';
 
 export default function App() {
   if (!supabaseConfigured) return <SetupNeeded />;
@@ -27,6 +29,7 @@ function Gate() {
           <Route index element={<Dashboard />} />
           <Route path="subjects" element={<Subjects />} />
           <Route path="timetable" element={<Timetable />} />
+          <Route path="focus" element={<Focus />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
@@ -37,8 +40,9 @@ function Gate() {
 function SetupNeeded() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="card max-w-md p-6">
-        <h1 className="mb-2 text-xl font-bold">🎀 Almost ready</h1>
+      <div className="card max-w-md p-6 text-center">
+        <Mascot mood="sad" className="mb-4 w-20" />
+        <h1 className="mb-2 text-2xl font-bold">Almost ready</h1>
         <p className="text-sm text-muted">
           Supabase isn't connected yet. Copy <code>.env.example</code> to <code>.env</code>, fill in your project URL and key,
           then restart <code>npm run dev</code>. See README.md for the steps.

@@ -50,7 +50,7 @@ export default function Timetable() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Weekly timetable</h1>
+        <h1 className="text-3xl font-bold">Weekly timetable</h1>
         <p className="text-sm text-muted">Tap + to plan when you'll study each subject. It repeats every week.</p>
       </div>
 
@@ -73,7 +73,7 @@ export default function Timetable() {
                 {subjects.rows.map((s) => (
                   <th key={s.id} className="min-w-36 p-3 text-left">
                     <span className="inline-flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full" style={{ background: s.color }} />
+                      <span className="h-3 w-3" style={{ background: s.color }} />
                       {s.name}
                     </span>
                   </th>
@@ -95,7 +95,7 @@ export default function Timetable() {
                             <button
                               key={slot.id}
                               onClick={() => setEditing({ subject: s, day: d, slot })}
-                              className="rounded-lg px-2 py-1 text-left text-xs font-semibold"
+                              className="px-2 py-1 text-left text-xs font-semibold text-on-pastel hover:brightness-110"
                               style={{ background: s.color }}
                             >
                               {fmtTime(slot.start_time)}–{fmtTime(slot.end_time)}
@@ -104,7 +104,7 @@ export default function Timetable() {
                           ))}
                           <button
                             onClick={() => setEditing({ subject: s, day: d, slot: null })}
-                            className="rounded-lg border border-dashed border-line px-2 py-1 text-xs text-muted hover:border-accent hover:text-ink"
+                            className="border-2 border-dashed border-line px-2 py-1 text-xs text-muted hover:border-accent hover:text-ink"
                             aria-label={`Add ${s.name} on ${day}`}
                           >
                             +

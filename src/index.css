@@ -1,49 +1,88 @@
 @import "tailwindcss";
 
 /*
-  THEME TOKENS — placeholder look.
-  When the Pinterest inspo arrives, the pink/lavender/pixel reskin happens mostly here.
+  THEME TOKENS — black + purple, pixel style.
+  Colors from inspo #1 (black / violet), pixel look from inspo #2.
 */
 @theme {
-  --color-bg: #fbf6fa;
-  --color-surface: #ffffff;
-  --color-ink: #2e2433;
-  --color-muted: #7b6e82;
-  --color-line: #ecdff0;
-  --color-primary: #b84f8a;
-  --color-primary-soft: #fbe3f0;
-  --color-accent: #8f7bd6;
-  --color-accent-soft: #ece7fb;
-  --color-danger: #b4232f;
-  --color-danger-soft: #fde8ea;
+  --color-bg: #07060b;
+  --color-surface: #111017;
+  --color-surface-2: #1a1724;
+  --color-ink: #f4f1fb;
+  --color-muted: #a39cb5;
+  --color-line: #2c2740;
+  --color-primary: #b197fc;        /* purple for text / accents on black */
+  --color-primary-strong: #7c3aed; /* purple for filled buttons (white text) */
+  --color-primary-soft: #241a3d;
+  --color-accent: #8b5cf6;
+  --color-accent-soft: #1d1730;
+  --color-danger: #fb7185;
+  --color-danger-soft: #3a1420;
+  --color-on-pastel: #1a1424;      /* text on subject-colored chips */
 
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-pixel: "Pixelify Sans", "Inter", system-ui, sans-serif;
+
+  --animate-bob: bob 1.6s steps(2) infinite;
+  --animate-twinkle: twinkle 2.4s steps(3) infinite;
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
 }
 
 html,
 body {
-  background: var(--color-bg);
+  background-color: var(--color-bg);
   color: var(--color-ink);
+  color-scheme: dark;
+}
+
+/* faint pixel grid, like inspo #2 */
+body {
+  background-image:
+    linear-gradient(rgba(177, 151, 252, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(177, 151, 252, 0.045) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+h1, h2, h3, .font-pixel {
+  font-family: var(--font-pixel);
+  letter-spacing: 0.01em;
+}
+
+/* Pixel "notched corner" borders — the 4 shadows leave the corners empty */
+.pixel-border {
+  --pb: var(--color-line);
+  box-shadow: 0 -3px 0 0 var(--pb), 0 3px 0 0 var(--pb), -3px 0 0 0 var(--pb), 3px 0 0 0 var(--pb);
 }
 
 .card {
   background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: 1rem;
+  --pb: var(--color-line);
+  box-shadow: 0 -3px 0 0 var(--pb), 0 3px 0 0 var(--pb), -3px 0 0 0 var(--pb), 3px 0 0 0 var(--pb);
+  margin: 3px;
 }
 
 .input {
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: 0.6rem;
-  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  border: 2px solid var(--color-line);
+  padding: 0.45rem 0.7rem;
   font-size: 0.9rem;
   outline: none;
   min-width: 0;
 }
 .input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+.input::placeholder {
+  color: var(--color-muted);
 }
 
 .btn {
@@ -51,24 +90,28 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border-radius: 0.6rem;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.95rem;
+  font-family: var(--font-pixel);
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
   white-space: nowrap;
+  transition: transform 0.08s, filter 0.15s, background 0.15s;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(2px);
 }
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--color-primary);
+  background: var(--color-primary-strong);
   color: white;
+  box-shadow: 0 -3px 0 0 #5b21b6 inset, 0 3px 0 0 #a78bfa inset;
 }
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
+  filter: brightness(1.12);
 }
 .btn-ghost {
   background: transparent;
@@ -81,4 +124,15 @@ body {
 .btn-danger {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+input[type='checkbox'] {
+  accent-color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bob,
+  .animate-twinkle {
+    animation: none;
+  }
 }

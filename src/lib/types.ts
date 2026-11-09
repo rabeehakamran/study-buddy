@@ -24,7 +24,18 @@ export type Slot = {
   note: string | null;
 };
 
-export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+export type StudySession = {
+  id: string;
+  subject_id: string | null;
+  task_id: string | null;
+  started_at: string;
+  ended_at: string;
+  focus_seconds: number;
+  planned_minutes: number;
+  completed: boolean;
+};
+
+export const DAYS =['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const SUBJECT_COLORS = [
   '#f9a8d4', // pink

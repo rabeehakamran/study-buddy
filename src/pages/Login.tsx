@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import ErrorBanner from '../components/ErrorBanner';
+import Mascot from '../pixel/Mascot';
+import PixelScene from '../pixel/PixelScene';
 
 export default function Login() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -32,9 +34,17 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+      <div className="flex flex-col items-center text-center">
+        <Mascot mood="happy" className="mb-3 w-24" />
+        <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+          Small steps.
+          <br />
+          <span className="text-primary">Big brain.</span>
+        </h1>
+      </div>
       <div className="card w-full max-w-sm p-6">
-        <h1 className="text-center text-2xl font-extrabold text-primary">🎀 Study Buddy</h1>
+        <h2 className="text-center text-2xl font-bold text-primary">Study Buddy</h2>
         <p className="mb-5 mt-1 text-center text-sm text-muted">
           {mode === 'signin' ? 'Welcome back! Ready to study?' : 'Make your account'}
         </p>
@@ -85,6 +95,7 @@ export default function Login() {
           </button>
         </p>
       </div>
+      <PixelScene className="max-w-3xl" />
     </div>
   );
 }

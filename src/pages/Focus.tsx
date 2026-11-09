@@ -1,0 +1,346 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { useRows } from '../lib/useRows';
+import { useAuth } from '../auth/AuthProvider';
+import { usePomodoro, type FinishedSession, type Mode, type Settings } from '../lib/usePomodoro';
+import type { StudySession, Subject, Task } from '../lib/types';
+import { fmtTime } from '../lib/format';
+import ErrorBanner from '../components/ErrorBanner';
+import Mascot from '../pixel/Mascot';
+import PixelArt from '../pixel/PixelArt';
+import { HEART, HEART_EMPTY_PALETTE, HEART_PALETTE, type Mood } from '../pixel/sprites';
+
+const MODE_LABEL: Record<Mode, string> = { focus: 'Focus', short: 'Short break', long: 'Long break' };
+const SEGMENTS = 20;
+
+function fmtClock(ms: number) {
+  const total = Math.ceil(ms / 1000);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function fmtMinutes(seconds: number) {
+  const m = Math.round(seconds / 60);
+  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+}
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export default function Focus() {
+  const { session } = useAuth();
+  const subjects = useRows<Subject>('subjects', 'position');
+  const tasks = useRows<Task>('tasks', 'created_at');
+  const [today, setToday] = useState<StudySession[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [justDone, setJustDone] = useState<FinishedSession | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from('study_sessions')
+      .select('*')
+      .gte('started_at', startOfToday().toISOString())
+      .order('started_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) setError(error.message);
+        else setToday((data ?? []) as StudySession[]);
+      });
+  }, []);
+
+  async function saveSession(f: FinishedSession) {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .insert({
+        subject_id: f.subjectId,
+        task_id: f.taskId,
+        started_at: new Date(f.startedAt).toISOString(),
+        ended_at: new Date(f.endedAt).toISOString(),
+        focus_seconds: f.focusSeconds,
+        planned_minutes: f.plannedMinutes,
+        completed: f.completed,
+      })
+      .select()
+      .single();
+    if (error) {
+      setError(`Couldn't save that session: ${error.message}`);
+      return;
+    }
+    if (f.startedAt >= startOfToday().getTime()) setToday((r) => [data as StudySession, ...r]);
+    if (f.completed) setJustDone(f);
+  }
+
+  const pomo = usePomodoro(session!.user.id, saveSession);
+  const { state, settings, remainingMs } = pomo;
+
+  // Forget a chosen subject/task that has since been deleted.
+  useEffect(() => {
+    if (subjects.loading || tasks.loading) return;
+    const subjectOk = !state.subjectId || subjects.rows.some((s) => s.id === state.subjectId);
+    const taskOk = !state.taskId || tasks.rows.some((t) => t.id === state.taskId);
+    if (!subjectOk || !taskOk) pomo.setTarget(subjectOk ? state.subjectId : null, null);
+  }, [subjects.loading, tasks.loading, subjects.rows, tasks.rows]);
+
+  // Countdown in the browser tab title.
+  useEffect(() => {
+    document.title = state.status === 'idle' ? 'Focus · Study Buddy' : `${fmtClock(remainingMs)} · ${MODE_LABEL[state.mode]}`;
+  }, [remainingMs, state.status, state.mode]);
+  useEffect(() => () => void (document.title = 'Study Buddy'), []);
+
+  async function markTaskDone(taskId: string) {
+    const { error } = await supabase.from('tasks').update({ done: true }).eq('id', taskId);
+    if (error) return setError(error.message);
+    tasks.setRows((r) => r.map((t) => (t.id === taskId ? { ...t, done: true } : t)));
+    setJustDone(null);
+  }
+
+  const isFocus = state.mode === 'focus';
+  const mood: Mood =
+    state.status === 'paused' ? 'sad' : state.status === 'running' ? (isFocus ? 'focus' : 'sleep') : 'happy';
+  const caption =
+    state.status === 'paused'
+      ? 'Paused… come back soon!'
+      : state.status === 'running'
+        ? isFocus
+          ? 'Focus time. You got this!'
+          : 'Break! Stretch & drink some water 💧'
+        : isFocus
+          ? 'Ready when you are!'
+          : 'Time for a break?';
+
+  const progress = state.totalMs ? 1 - remainingMs / state.totalMs : 0;
+  const filled = Math.floor(progress * SEGMENTS);
+  const hearts = state.mode === 'long' ? settings.longEvery : state.cycle % settings.longEvery;
+
+  const subjectById = new Map(subjects.rows.map((s) => [s.id, s]));
+  const openTasks = tasks.rows.filter((t) => t.subject_id === state.subjectId && !t.done);
+  const doneTask = justDone?.taskId ? tasks.rows.find((t) => t.id === justDone.taskId && !t.done) : undefined;
+
+  const completedToday = today.filter((s) => s.completed).length;
+  const secondsToday = today.reduce((sum, s) => sum + s.focus_seconds, 0);
+  const locked = state.status !== 'idle';
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Focus</h1>
+        <p className="text-sm text-muted">Pick a subject, start the timer, and Buddy will keep you company.</p>
+      </div>
+
+      <ErrorBanner message={error ?? subjects.error ?? tasks.error} onClose={() => setError(null)} />
+
+      {justDone && (
+        <div className="card flex flex-wrap items-center gap-3 p-4">
+          <span className="font-pixel text-lg">🎉 Pomodoro done! +{Math.round(justDone.focusSeconds / 60)} min</span>
+          {doneTask && (
+            <button className="btn btn-primary" onClick={() => markTaskDone(doneTask.id)}>
+              Mark “{doneTask.title}” done
+            </button>
+          )}
+          <button className="btn btn-ghost ml-auto" onClick={() => setJustDone(null)}>
+            Close
+          </button>
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        {/* ---------- Timer ---------- */}
+        <section className="card flex flex-col items-center gap-5 p-6">
+          <div className="flex flex-wrap justify-center gap-1" role="tablist" aria-label="Timer mode">
+            {(['focus', 'short', 'long'] as Mode[]).map((m) => (
+              <button
+                key={m}
+                role="tab"
+                aria-selected={state.mode === m}
+                disabled={locked && state.mode !== m}
+                onClick={() => pomo.setMode(m)}
+                className={`btn ${state.mode === m ? 'bg-primary-soft text-primary' : 'btn-ghost'}`}
+              >
+                {MODE_LABEL[m]}
+              </button>
+            ))}
+          </div>
+
+          <Mascot mood={mood} className="w-28 sm:w-32" />
+          <p className="text-sm text-muted" aria-live="polite">
+            {caption}
+          </p>
+
+          <div className="font-pixel text-7xl font-bold tabular-nums sm:text-8xl" aria-live="off">
+            {fmtClock(remainingMs)}
+          </div>
+
+          <div className="flex w-full max-w-md gap-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
+            {Array.from({ length: SEGMENTS }, (_, i) => (
+              <div key={i} className={`h-3 flex-1 ${i < filled ? (isFocus ? 'bg-accent' : 'bg-primary') : 'bg-surface-2'}`} />
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2" aria-label={`${hearts} of ${settings.longEvery} pomodoros until a long break`}>
+            {Array.from({ length: settings.longEvery }, (_, i) => (
+              <PixelArt key={i} rows={HEART} palette={i < hearts ? HEART_PALETTE : HEART_EMPTY_PALETTE} className="w-6" />
+            ))}
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2">
+            {state.status === 'running' ? (
+              <button className="btn btn-primary min-w-32 text-lg" onClick={pomo.pause}>
+                Pause
+              </button>
+            ) : (
+              <button className="btn btn-primary min-w-32 text-lg" onClick={pomo.start}>
+                {state.status === 'paused' ? 'Resume' : isFocus ? 'Start focus' : 'Start break'}
+              </button>
+            )}
+            {isFocus && state.status !== 'idle' && (
+              <button className="btn btn-ghost" onClick={pomo.stop}>
+                End session
+              </button>
+            )}
+            {!isFocus && (
+              <button className="btn btn-ghost" onClick={pomo.stop}>
+                Skip break
+              </button>
+            )}
+          </div>
+
+          <div className="grid w-full max-w-md gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm font-semibold">
+              Subject
+              <select
+                className="input"
+                value={state.subjectId ?? ''}
+                disabled={locked}
+                onChange={(e) => pomo.setTarget(e.target.value || null, null)}
+              >
+                <option value="">No subject</option>
+                {subjects.rows.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-semibold">
+              Task (optional)
+              <select
+                className="input"
+                value={state.taskId ?? ''}
+                disabled={locked || !state.subjectId}
+                onChange={(e) => pomo.setTarget(state.subjectId, e.target.value || null)}
+              >
+                <option value="">No task</option>
+                {openTasks.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </section>
+
+        {/* ---------- Side column ---------- */}
+        <div className="flex flex-col gap-6">
+          <section className="card p-4">
+            <h2 className="mb-3 text-xl font-bold">Today</h2>
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <div className="bg-surface-2 p-3 text-center">
+                <div className="font-pixel text-3xl font-bold text-primary">{completedToday}</div>
+                <div className="text-xs text-muted">pomodoros</div>
+              </div>
+              <div className="bg-surface-2 p-3 text-center">
+                <div className="font-pixel text-3xl font-bold text-primary">{fmtMinutes(secondsToday)}</div>
+                <div className="text-xs text-muted">focused</div>
+              </div>
+            </div>
+            {today.length === 0 ? (
+              <p className="text-sm text-muted">No sessions yet today. Your first one is the hardest!</p>
+            ) : (
+              <ul className="flex flex-col gap-1.5 text-sm">
+                {today.map((s) => {
+                  const subj = s.subject_id ? subjectById.get(s.subject_id) : undefined;
+                  return (
+                    <li key={s.id} className="flex items-center gap-2">
+                      <span className="h-3 w-3 shrink-0" style={{ background: subj?.color ?? 'var(--color-line)' }} />
+                      <span className="w-16 shrink-0 text-muted">{fmtTime(new Date(s.started_at).toTimeString().slice(0, 5))}</span>
+                      <span className="flex-1 truncate">{subj?.name ?? 'No subject'}</span>
+                      <span className="font-semibold">{fmtMinutes(s.focus_seconds)}</span>
+                      <span title={s.completed ? 'Completed' : 'Ended early'}>{s.completed ? '✓' : '·'}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          <SettingsCard settings={settings} disabled={locked} onChange={pomo.setSettings} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsCard({ settings, disabled, onChange }: { settings: Settings; disabled: boolean; onChange: (s: Settings) => void }) {
+  const set = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
+  return (
+    <section className="card p-4">
+      <h2 className="mb-1 text-xl font-bold">Timer settings</h2>
+      {disabled && <p className="mb-2 text-xs text-muted">Stop the timer to change these.</p>}
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <NumberField label="Focus (min)" value={settings.focus} min={1} max={120} disabled={disabled} onChange={(v) => set({ focus: v })} />
+        <NumberField label="Short break" value={settings.short} min={1} max={30} disabled={disabled} onChange={(v) => set({ short: v })} />
+        <NumberField label="Long break" value={settings.long} min={1} max={60} disabled={disabled} onChange={(v) => set({ long: v })} />
+        <NumberField label="Long break every" value={settings.longEvery} min={2} max={8} disabled={disabled} onChange={(v) => set({ longEvery: v })} />
+      </div>
+      <label className="mt-3 flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={settings.autoStartBreaks} disabled={disabled} onChange={(e) => set({ autoStartBreaks: e.target.checked })} />
+        Start breaks automatically
+      </label>
+    </section>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  min,
+  max,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  disabled: boolean;
+  onChange: (v: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => setText(String(value)), [value]);
+
+  function commit() {
+    const n = Math.min(max, Math.max(min, Math.round(Number(text)) || min));
+    setText(String(n));
+    if (n !== value) onChange(n);
+  }
+
+  return (
+    <label className="flex flex-col gap-1 text-xs font-semibold text-muted">
+      {label}
+      <input
+        className="input"
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        value={text}
+        disabled={disabled}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && commit()}
+      />
+    </label>
+  );
+}

@@ -56,7 +56,7 @@ export default function Subjects() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Subjects</h1>
+        <h1 className="text-3xl font-bold">Subjects</h1>
         <p className="text-sm text-muted">Add your subjects, then the tasks for each one.</p>
       </div>
 
@@ -174,7 +174,7 @@ function SubjectCard({ subject, tasks, onUpdate, onDelete, onAddTask, onToggleTa
           </div>
         ) : (
           <div className="mb-3 flex items-center gap-2">
-            <h2 className="text-lg font-bold">{subject.name}</h2>
+            <h2 className="text-xl font-bold">{subject.name}</h2>
             <span className="text-xs text-muted">
               {doneCount}/{tasks.length} done
             </span>
@@ -217,7 +217,7 @@ export function TaskRow({ task, onToggle, onDelete, subject }: { task: Task; onT
       <input type="checkbox" checked={task.done} onChange={onToggle} className="h-4 w-4 accent-primary" aria-label={`Mark "${task.title}" done`} />
       <span className={`flex-1 text-sm ${task.done ? 'text-muted line-through' : ''}`}>{task.title}</span>
       {subject && (
-        <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={{ background: subject.color }}>
+        <span className="px-2 py-0.5 text-xs font-semibold text-on-pastel" style={{ background: subject.color }}>
           {subject.name}
         </span>
       )}

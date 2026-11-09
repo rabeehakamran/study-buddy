@@ -7,6 +7,8 @@ import { daysFromToday, fmtTime, sortTasks, todayIndex } from '../lib/format';
 import { displayName, useAuth } from '../auth/AuthProvider';
 import ErrorBanner from '../components/ErrorBanner';
 import { TaskRow } from './Subjects';
+import Mascot from '../pixel/Mascot';
+import PixelScene from '../pixel/PixelScene';
 
 export default function Dashboard() {
   const { session } = useAuth();
@@ -36,10 +38,19 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Hi {displayName(session)} 👋</h1>
-        <p className="text-sm text-muted">Happy {DAYS[today]}! Here's your day.</p>
-      </div>
+      <section className="card overflow-hidden">
+        <div className="flex flex-wrap items-center gap-6 px-6 pt-6">
+          <Mascot mood="happy" className="w-20 sm:w-24" />
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold sm:text-4xl">Hi {displayName(session)}!</h1>
+            <p className="text-muted">Happy {DAYS[today]}! Here's your day.</p>
+          </div>
+          <Link to="/focus" className="btn btn-primary text-lg">
+            Start a pomodoro ▶
+          </Link>
+        </div>
+        <PixelScene className="mt-2" />
+      </section>
 
       <ErrorBanner message={error ?? subjects.error ?? slots.error ?? tasks.error} onClose={() => setError(null)} />
 
@@ -67,8 +78,8 @@ export default function Dashboard() {
               {todaysSlots.map((slot) => {
                 const s = subjectById.get(slot.subject_id)!;
                 return (
-                  <li key={slot.id} className="flex items-center gap-3 rounded-xl p-2" style={{ background: `${s.color}55` }}>
-                    <span className="h-8 w-1.5 rounded-full" style={{ background: s.color }} />
+                  <li key={slot.id} className="flex items-center gap-3 bg-surface-2 p-2">
+                    <span className="h-8 w-1.5" style={{ background: s.color }} />
                     <span className="w-36 shrink-0 text-sm font-semibold">
                       {fmtTime(slot.start_time)}–{fmtTime(slot.end_time)}
                     </span>

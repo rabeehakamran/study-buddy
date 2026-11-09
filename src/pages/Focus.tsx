@@ -272,15 +272,56 @@ function CameraCard() {
         leaves your laptop.
       </p>
       {camera.on && (
-        <p className="mb-3 flex items-center gap-2 text-sm">
-          <span className={`h-2.5 w-2.5 shrink-0 ${info.dot}`} />
-          {camera.status === 'error' ? camera.error : info.text}
-        </p>
+        <>
+          <p className="mb-2 flex items-center gap-2 text-sm">
+            <span className={`h-2.5 w-2.5 shrink-0 ${info.dot}`} />
+            {camera.status === 'error' ? camera.error : info.text}
+          </p>
+          <WhatBuddySees />
+        </>
       )}
       <Link to="/face-setup" className="text-sm font-semibold text-primary">
         {enrolled ? 'Redo face setup' : 'Set up your face (1 min) →'}
       </Link>
     </section>
+  );
+}
+
+/** Live readout of the last camera check — helps figure out why Buddy isn't recognising you. */
+function WhatBuddySees() {
+  const { camera } = useFocus();
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => tick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const c = camera.lastCheck;
+  const age = c ? Math.round((Date.now() - c.at) / 1000) : null;
+  const stale = age !== null && age > 5;
+  const loading = camera.status === 'starting';
+
+  return (
+    <div className="mb-3 bg-surface-2 p-2 text-xs text-muted">
+      <div className="mb-1 font-semibold text-ink">What Buddy sees</div>
+      {loading || !c ? (
+        <div>{loading ? 'Starting camera…' : 'Waiting for first check…'}</div>
+      ) : (
+        <>
+          <div>
+            Face: {c.face ? `yes, score ${c.score?.toFixed(2)}${c.lookalike ? ' (closer to lookalike)' : ''}` : 'no face found'}
+          </div>
+          <div>Body: {c.body ? 'yes' : 'no'}</div>
+          <div className={stale ? 'font-semibold text-danger' : ''}>
+            Last check: {age === 0 ? 'just now' : `${age}s ago`}
+            {stale && ' (stuck?)'}
+          </div>
+        </>
+      )}
+      <button className="mt-1 font-semibold text-primary" onClick={camera.restart}>
+        Restart camera
+      </button>
+    </div>
   );
 }
 

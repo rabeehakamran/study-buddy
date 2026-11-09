@@ -15,7 +15,7 @@ export const STRICTNESS = [
   { label: 'Very strict', value: 0.35 },
 ];
 export const DEFAULT_THRESHOLD = 0.45;
-const NOT_ME_MARGIN = 0.03; // must be at least this much closer to "me" than to "not me"
+const NOT_ME_MARGIN = 0.01; // must be at least this much closer to "me" than to "not me"
 const MAX_NOT_ME = 12;
 
 const key = (userId: string) => `sb.face.${userId}`;

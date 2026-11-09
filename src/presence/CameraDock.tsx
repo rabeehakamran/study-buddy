@@ -20,7 +20,10 @@ export default function CameraDock() {
         muted
         playsInline
         className={
-          showVideo && !small ? 'block aspect-[4/3] w-full bg-black object-cover [transform:scaleX(-1)]' : 'pointer-events-none absolute h-px w-px opacity-0'
+          showVideo && !small
+            ? 'block aspect-[4/3] w-full bg-black object-cover [transform:scaleX(-1)]'
+            : // keep full size but invisible: browsers may freeze tiny/1px videos
+              'pointer-events-none absolute left-0 top-0 -z-10 aspect-[4/3] w-full opacity-0'
         }
       />
       <div className="flex items-start gap-2 p-2">

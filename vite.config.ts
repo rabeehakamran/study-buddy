@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -51,8 +51,19 @@ function localApi(): Plugin {
   };
 }
 
+/** The same security headers Vercel sends (from vercel.json), for testing with `vite preview`. */
+function vercelHeaders(): Record<string, string> {
+  const cfg = JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8')) as {
+    headers?: { headers: { key: string; value: string }[] }[];
+  };
+  return Object.fromEntries((cfg.headers ?? []).flatMap((h) => h.headers.map((x) => [x.key, x.value])));
+}
+
 export default defineConfig(({ mode }) => {
   // Make .env values (incl. server-only GROQ_API_KEY) visible to the local API functions.
   Object.assign(process.env, { ...loadEnv(mode, process.cwd(), ''), ...process.env });
-  return { plugins: [react(), tailwindcss(), localApi()] };
+  return {
+    plugins: [react(), tailwindcss(), localApi()],
+    preview: { headers: vercelHeaders() },
+  };
 });

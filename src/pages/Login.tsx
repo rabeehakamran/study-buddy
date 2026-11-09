@@ -53,7 +53,8 @@ export default function Login() {
           {mode === 'signup' && (
             <label className="flex flex-col gap-1 text-sm font-semibold">
               Your name
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} required maxLength={40} />
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} required maxLength={30} />
+              <span className="text-xs font-normal text-muted">Your friends will see this on leaderboards. Keep it kind 🎀</span>
             </label>
           )}
           <label className="flex flex-col gap-1 text-sm font-semibold">
@@ -68,7 +69,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={mode === 'signup' ? 8 : 6}
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             />
           </label>

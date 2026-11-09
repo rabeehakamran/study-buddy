@@ -87,10 +87,27 @@ export default function Friends() {
 
   async function leave() {
     if (!group || !confirm(`Leave "${group.name}"? You can join again later with the code.`)) return;
-    const { error } = await supabase.from('group_members').delete().eq('group_id', group.id).eq('user_id', userId);
+    const { error } = await supabase.rpc('leave_group', { gid: group.id });
     if (error) return setError(error.message);
     setSelected(null);
     await loadGroups();
+  }
+
+  // ---------- owner tools ----------
+  const isOwner = !!group && group.created_by === userId;
+
+  async function removeMember(r: Row) {
+    if (!group || !confirm(`Remove ${r.display_name} from "${group.name}"?`)) return;
+    const { error } = await supabase.rpc('remove_member', { gid: group.id, member: r.user_id });
+    if (error) return setError(error.message);
+    setRows((rs) => rs?.filter((x) => x.user_id !== r.user_id) ?? null);
+  }
+
+  async function newCode() {
+    if (!group || !confirm('Make a new invite code? The old code will stop working (people already in the group stay).')) return;
+    const { data, error } = await supabase.rpc('regenerate_invite_code', { gid: group.id });
+    if (error) return setError(error.message);
+    setGroups((gs) => gs?.map((g) => (g.id === group.id ? { ...g, invite_code: data as string } : g)) ?? null);
   }
 
   async function copyCode() {
@@ -152,6 +169,11 @@ export default function Friends() {
                   <button className="font-pixel bg-surface-2 px-3 py-1.5 text-lg tracking-widest" onClick={copyCode} title="Copy invite code">
                     {group.invite_code} <span className="text-xs text-muted">{copied ? 'copied!' : 'copy'}</span>
                   </button>
+                  {isOwner && (
+                    <button className="btn btn-ghost px-2 text-xs" onClick={newCode} title="Old code stops working">
+                      New code
+                    </button>
+                  )}
                 </div>
 
                 {rows === null ? (
@@ -165,6 +187,7 @@ export default function Friends() {
                           <div className="flex items-baseline justify-between gap-2">
                             <span className="truncate font-semibold">
                               {r.display_name}
+                              {r.user_id === group.created_by && <span title="Group owner"> 👑</span>}
                               {r.is_me && <span className="text-xs text-primary"> (you)</span>}
                             </span>
                             <span className="font-pixel text-lg">{fmtHours(r.week_seconds)}</span>
@@ -172,7 +195,14 @@ export default function Friends() {
                           <div className="mt-1 h-2 bg-bg">
                             <div className="h-full bg-accent" style={{ width: `${(r.week_seconds / leaderSecs) * 100}%` }} />
                           </div>
-                          <div className="mt-1 text-xs text-muted">{fmtHours(r.today_seconds)} today</div>
+                          <div className="mt-1 flex items-center justify-between text-xs text-muted">
+                            <span>{fmtHours(r.today_seconds)} today</span>
+                            {isOwner && !r.is_me && (
+                              <button className="hover:text-danger" onClick={() => removeMember(r)} aria-label={`Remove ${r.display_name}`}>
+                                Remove
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <span className="flex w-12 items-center justify-end gap-1" title={`${r.streak} day streak`} aria-label={`${r.streak} day streak`}>
                           <PixelArt rows={FLAME} palette={r.streak > 0 ? FLAME_PALETTE : FLAME_OFF_PALETTE} className="w-4" />
@@ -183,7 +213,10 @@ export default function Friends() {
                   </ol>
                 )}
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-                  <span>Share the code above so friends can join · updates every minute</span>
+                  <span>
+                    Only share the code with friends you know 💜 · updates every minute
+                    {isOwner && ' · You’re the owner: you can remove people or make a new code'}
+                  </span>
                   <button className="btn btn-ghost text-xs" onClick={leave}>
                     Leave group
                   </button>

@@ -29,7 +29,7 @@ export type StudySession = {
   subject_id: string | null;
   task_id: string | null;
   started_at: string;
-  ended_at: string;
+  ended_at: string | null; // null while the session is running
   focus_seconds: number;
   planned_minutes: number;
   completed: boolean;

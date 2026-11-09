@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { usePomodoro, type FinishedSession, type Mode } from '../lib/usePomodoro';
+import { usePomodoro, type FinishedSession, type Mode, type TimerState } from '../lib/usePomodoro';
 import { isLoggedInStatus, usePresence } from '../presence/usePresence';
 import type { PresenceEvent, StudySession } from '../lib/types';
 
@@ -30,6 +30,7 @@ function useFocusState(userId: string) {
       .from('study_sessions')
       .select('*')
       .gte('started_at', since)
+      .not('ended_at', 'is', null) // skip the one that's still running
       .order('started_at', { ascending: false })
       .then(({ data, error }) => (error ? setError(error.message) : setToday((data ?? []) as StudySession[])));
     supabase
@@ -41,26 +42,65 @@ function useFocusState(userId: string) {
   }, []);
 
   // ---------- pomodoro ----------
-  async function saveSession(f: FinishedSession) {
-    const { data, error } = await supabase
-      .from('study_sessions')
-      .insert({
-        subject_id: f.subjectId,
-        task_id: f.taskId,
-        started_at: new Date(f.startedAt).toISOString(),
-        ended_at: new Date(f.endedAt).toISOString(),
-        focus_seconds: f.focusSeconds,
-        planned_minutes: f.plannedMinutes,
-        completed: f.completed,
-      })
-      .select()
-      .single();
-    if (error) return setError(`Couldn't save that session: ${error.message}`);
-    if (f.startedAt >= startOfToday().getTime()) setToday((r) => [data as StudySession, ...r]);
-    if (f.completed) setJustDone(f);
+  // The server keeps the clock: begin_focus() when a focus session starts, end_focus() when it
+  // ends. The server caps the minutes by real elapsed time, so hours can't be faked.
+  const sidKey = `sb.pomo.sid.${userId}`;
+  const serverIds = useRef(new Map<number, Promise<string | null>>()); // focusStartedAt -> server id
+
+  function beginOnServer(st: TimerState) {
+    const startedAt = st.focusStartedAt!;
+    const p = Promise.resolve(
+      supabase.rpc('begin_focus', {
+        p_subject: st.subjectId,
+        p_task: st.taskId,
+        p_planned: Math.max(1, Math.round(st.totalMs / 60_000)),
+      }),
+    ).then(({ data, error }) => {
+      if (error) {
+        setError(`This session can't be saved: ${error.message}`);
+        return null;
+      }
+      try {
+        localStorage.setItem(sidKey, JSON.stringify({ startedAt, id: data })); // survives a page refresh
+      } catch {
+        /* ignore */
+      }
+      return data as string;
+    });
+    serverIds.current.set(startedAt, p);
   }
 
-  const pomo = usePomodoro(userId, saveSession);
+  function storedServerId(startedAt: number): string | null {
+    try {
+      const s = JSON.parse(localStorage.getItem(sidKey) ?? 'null') as { startedAt: number; id: string } | null;
+      return s && s.startedAt === startedAt ? s.id : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function saveSession(f: FinishedSession) {
+    const id = (await serverIds.current.get(f.startedAt)) ?? storedServerId(f.startedAt);
+    serverIds.current.delete(f.startedAt);
+    if (!id) return setError('Couldn’t save that session (it wasn’t registered when it started. Were you offline?)');
+    const { data, error } = await supabase.rpc('end_focus', {
+      p_id: id,
+      p_focus_seconds: f.focusSeconds,
+      p_completed: f.completed,
+    });
+    try {
+      localStorage.removeItem(sidKey);
+    } catch {
+      /* ignore */
+    }
+    if (error) return setError(`Couldn't save that session: ${error.message}`);
+    const saved = data as StudySession | null;
+    if (!saved?.id) return; // too short to count
+    if (new Date(saved.started_at).getTime() >= startOfToday().getTime()) setToday((r) => [saved, ...r]);
+    if (saved.completed) setJustDone({ ...f, focusSeconds: saved.focus_seconds });
+  }
+
+  const pomo = usePomodoro(userId, saveSession, beginOnServer);
 
   // ---------- camera buddy ----------
   const camKey = `sb.camera.${userId}`;

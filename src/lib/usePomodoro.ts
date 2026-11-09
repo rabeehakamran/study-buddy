@@ -82,7 +82,12 @@ function idle(mode: Mode, cycle: number, s: Settings, keep: Pick<TimerState, 'su
  * so it stays accurate when the tab is in the background and survives a refresh.
  * `onFinish` is called when a focus session ends (fully, or stopped after ≥ 1 min).
  */
-export function usePomodoro(userId: string, onFinish: (s: FinishedSession) => void) {
+export function usePomodoro(
+  userId: string,
+  onFinish: (s: FinishedSession) => void,
+  /** Called once when a NEW focus session starts (not on resume) — used to register it with the server. */
+  onFocusBegin?: (s: TimerState) => void,
+) {
   const settingsKey = `sb.pomo.settings.${userId}`;
   const stateKey = `sb.pomo.state.${userId}`;
 
@@ -91,11 +96,13 @@ export function usePomodoro(userId: string, onFinish: (s: FinishedSession) => vo
     load(stateKey, idle('focus', 0, settingsRef.current, { subjectId: null, taskId: null })),
   );
   const onFinishRef = useRef(onFinish);
+  const onFocusBeginRef = useRef(onFocusBegin);
   const [, rerender] = useState(0);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     onFinishRef.current = onFinish;
+    onFocusBeginRef.current = onFocusBegin;
   });
 
   function commit(next: TimerState) {
@@ -159,13 +166,16 @@ export function usePomodoro(userId: string, onFinish: (s: FinishedSession) => vo
       if (cur.status === 'running') return;
       unlockAudio();
       const t = Date.now();
-      commit({
+      const isNewFocus = cur.mode === 'focus' && cur.focusStartedAt === null;
+      const next: TimerState = {
         ...cur,
         status: 'running',
         endsAt: t + cur.remainingMs,
         runStartedAt: t,
         focusStartedAt: cur.mode === 'focus' ? (cur.focusStartedAt ?? t) : null,
-      });
+      };
+      commit(next);
+      if (isNewFocus) onFocusBeginRef.current?.(next);
     },
     /** Pause now, or "as of" an earlier moment (used when she walked away). */
     pause(at?: number) {

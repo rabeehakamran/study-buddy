@@ -31,10 +31,9 @@ export type ChatUsage = { used: number; limit: number };
 /** Thrown when today's Ask Buddy messages are used up. */
 export class LimitReachedError extends Error {}
 
-const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export async function getChatUsage(): Promise<ChatUsage> {
-  const r = await fetch(`/api/chat?tz=${encodeURIComponent(tz())}`, { headers: await authHeaders() });
+  const r = await fetch('/api/chat', { headers: await authHeaders() });
   if (!r.ok) throw await errorFrom(r);
   return (await r.json()) as ChatUsage;
 }
@@ -49,7 +48,7 @@ export async function streamChat(
   const r = await fetch('/api/chat', {
     method: 'POST',
     headers: await authHeaders(),
-    body: JSON.stringify({ ...body, tz: tz() }),
+    body: JSON.stringify(body),
     signal,
   });
   if (r.status === 429) {

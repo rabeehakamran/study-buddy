@@ -158,10 +158,10 @@ export default function Tutor() {
               </span>
             </div>
           )}
-          <Link to="/quiz" className="btn btn-ghost">
+          <Link to="/quiz" className="btn btn-ghost px-2.5 text-sm sm:px-4 sm:text-base">
             Quiz me ✨
           </Link>
-          <button className="btn btn-ghost" onClick={newChat} disabled={!messages.length}>
+          <button className="btn btn-ghost px-2.5 text-sm sm:px-4 sm:text-base" onClick={newChat} disabled={!messages.length}>
             New chat
           </button>
         </div>
@@ -182,7 +182,7 @@ export default function Tutor() {
         ))}
       </div>
 
-      <section className="card flex h-[calc(100vh-290px)] min-h-[420px] flex-col">
+      <section className="card flex h-[calc(100dvh-290px)] min-h-[380px] flex-col">
         <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite">
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
@@ -250,7 +250,8 @@ export default function Tutor() {
             ref={inputRef}
             className="input max-h-40 min-h-11 flex-1 resize-none"
             rows={1}
-            placeholder="Ask Buddy anything… (Enter to send, Shift+Enter for a new line)"
+            placeholder="Ask Buddy anything…"
+            title="Enter to send, Shift+Enter for a new line"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}

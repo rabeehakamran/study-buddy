@@ -13,7 +13,7 @@ export default function CameraDock() {
   const showVideo = camera.status !== 'needs-setup' && camera.status !== 'error';
 
   return (
-    <aside className="card fixed bottom-3 right-3 z-40 w-52 overflow-hidden text-xs" aria-label="Camera buddy">
+    <aside className="card fixed bottom-3 right-3 z-40 w-40 overflow-hidden sm:w-52 text-xs" aria-label="Camera buddy">
       {/* The video stays in the page while the camera is on (detection reads from it). */}
       <video
         ref={camera.videoRef}

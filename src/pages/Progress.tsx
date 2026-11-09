@@ -304,6 +304,7 @@ function Heatmap({ get, today }: { get: (iso: string) => DayTotal; today: string
                     className={`h-4 w-4 ${iso === today ? 'outline outline-1 outline-ink' : ''}`}
                     style={{ background: future ? 'transparent' : HEAT[heatLevel(t.secs)] }}
                     onMouseEnter={() => !future && setHover(t)}
+                    onClick={() => !future && setHover(t)}
                     onMouseLeave={() => setHover(null)}
                     title={future ? undefined : `${prettyDate(iso)}: ${fmtHours(t.secs)}`}
                   />

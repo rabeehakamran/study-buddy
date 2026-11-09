@@ -56,6 +56,8 @@ h1, h2, h3, .font-pixel {
   letter-spacing: 0.01em;
 }
 
+/* Reusable pieces live in the components layer so Tailwind utilities (px-2, text-sm…) can override them. */
+@layer components {
 /* Pixel "notched corner" borders — the 4 shadows leave the corners empty */
 .pixel-border {
   --pb: var(--color-line);
@@ -125,6 +127,7 @@ h1, h2, h3, .font-pixel {
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
+} /* end @layer components */
 
 input[type='checkbox'] {
   accent-color: var(--color-accent);

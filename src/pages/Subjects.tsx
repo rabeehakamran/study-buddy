@@ -109,7 +109,7 @@ function AddSubjectForm({ onAdd }: { onAdd: (name: string, color: string) => Pro
   return (
     <form onSubmit={submit} className="card flex flex-wrap items-center gap-3 p-4">
       <input
-        className="input flex-1"
+        className="input w-full sm:w-auto sm:flex-1"
         placeholder="New subject, e.g. Maths"
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -197,7 +197,7 @@ function SubjectCard({ subject, tasks, onUpdate, onDelete, onAddTask, onToggleTa
 
         <form onSubmit={submitTask} className="mt-3 flex flex-wrap gap-2">
           <input
-            className="input flex-1"
+            className="input w-full sm:w-auto sm:flex-1"
             placeholder="Add a task…"
             value={title}
             onChange={(e) => setTitle(e.target.value)}

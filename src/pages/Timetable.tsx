@@ -69,13 +69,15 @@ export default function Timetable() {
           .
         </p>
       ) : (
+        <>
+        {subjects.rows.length > 2 && <p className="text-xs text-muted sm:hidden">Swipe sideways to see all subjects →</p>}
         <div className="card overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
                 <th className="sticky left-0 z-10 bg-surface p-3 text-left text-muted">Day</th>
                 {subjects.rows.map((s) => (
-                  <th key={s.id} className="min-w-36 p-3 text-left">
+                  <th key={s.id} className="min-w-32 p-3 text-left sm:min-w-36">
                     <span className="inline-flex items-center gap-2">
                       <span className="h-3 w-3" style={{ background: s.color }} />
                       {s.name}
@@ -87,8 +89,11 @@ export default function Timetable() {
             <tbody>
               {DAYS.map((day, d) => (
                 <tr key={day} className={`border-t border-line ${d === today ? 'bg-primary-soft/50' : ''}`}>
-                  <th className={`sticky left-0 z-10 p-3 text-left font-semibold ${d === today ? 'bg-primary-soft text-primary' : 'bg-surface'}`}>
-                    {day}
+                  <th
+                    className={`sticky left-0 z-10 px-2 py-3 text-left font-semibold sm:p-3 ${d === today ? 'bg-primary-soft text-primary' : 'bg-surface'}`}
+                  >
+                    <span className="sm:hidden">{day.slice(0, 3)}</span>
+                    <span className="hidden sm:inline">{day}</span>
                   </th>
                   {subjects.rows.map((s) => {
                     const cell = slots.rows.filter((x) => x.subject_id === s.id && x.day_of_week === d);
@@ -122,6 +127,7 @@ export default function Timetable() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {editing && (

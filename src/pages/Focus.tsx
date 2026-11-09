@@ -115,7 +115,7 @@ export default function Focus() {
                 aria-selected={state.mode === m}
                 disabled={locked && state.mode !== m}
                 onClick={() => pomo.setMode(m)}
-                className={`btn ${state.mode === m ? 'bg-primary-soft text-primary' : 'btn-ghost'}`}
+                className={`btn px-2.5 text-sm sm:px-4 sm:text-base ${state.mode === m ? 'bg-primary-soft text-primary' : 'btn-ghost'}`}
               >
                 {MODE_LABEL[m]}
               </button>

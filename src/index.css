@@ -130,6 +130,68 @@ input[type='checkbox'] {
   accent-color: var(--color-accent);
 }
 
+/* Buddy's markdown answers */
+.md {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.md > * + * {
+  margin-top: 0.6em;
+}
+.md ul {
+  list-style: square;
+  padding-left: 1.2em;
+}
+.md ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+.md li + li {
+  margin-top: 0.25em;
+}
+.md strong {
+  color: var(--color-primary);
+}
+.md h1,
+.md h2,
+.md h3,
+.md h4 {
+  font-size: 1.1em;
+  font-weight: 700;
+}
+.md code {
+  background: var(--color-bg);
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.md pre {
+  background: var(--color-bg);
+  padding: 0.75em;
+  overflow-x: auto;
+}
+.md pre code {
+  background: none;
+  padding: 0;
+}
+.md a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.md table {
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.md th,
+.md td {
+  border: 1px solid var(--color-line);
+  padding: 0.3em 0.6em;
+}
+.md blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 0.75em;
+  color: var(--color-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-bob,
   .animate-twinkle {

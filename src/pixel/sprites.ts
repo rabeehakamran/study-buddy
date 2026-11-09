@@ -104,6 +104,20 @@ export const FLAME = [
 export const FLAME_PALETTE: Palette = { f: '#7c3aed', Y: '#c4b5fd', w: '#ffffff' };
 export const FLAME_OFF_PALETTE: Palette = { f: '#2c2740', Y: '#3a3352', w: '#4a4363' };
 
+export const QUESTION = [
+  '.bbbbbbbbb.',
+  'bbbwwwwwbbb',
+  'bbwwbbbwwbb',
+  'bbbbbbbwwbb',
+  'bbbbbwwwbbb',
+  'bbbbbwwbbbb',
+  'bbbbbbbbbbb',
+  '.bbbbwwbbb.',
+  '...bb......',
+  '..b........',
+];
+export const QUESTION_PALETTE: Palette = { b: '#7c3aed', w: '#ffffff' };
+
 export const BOOKS = [
   '.....hh.....',
   '.bbbbbbbbb..',

@@ -10,6 +10,8 @@ import Focus from './pages/Focus';
 import FaceSetup from './pages/FaceSetup';
 import Progress from './pages/Progress';
 import Friends from './pages/Friends';
+import Tutor from './pages/Tutor';
+import Quiz from './pages/Quiz';
 import Mascot from './pixel/Mascot';
 
 export default function App() {
@@ -36,6 +38,8 @@ function Gate() {
           <Route path="face-setup" element={<FaceSetup />} />
           <Route path="progress" element={<Progress />} />
           <Route path="friends" element={<Friends />} />
+          <Route path="tutor" element={<Tutor />} />
+          <Route path="quiz" element={<Quiz />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
